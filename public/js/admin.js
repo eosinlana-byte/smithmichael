@@ -1,7 +1,7 @@
 const $ = (s) => document.querySelector(s);
 const toast = (text) => { const t=$('#toast'); t.textContent=text; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1800); };
 const esc = (v) => String(v || '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-async function api(url, options={}) { const r=await fetch(url,{headers:{'Content-Type':'application/json',...(options.headers||{})},...options}); if(!r.ok) throw new Error('Request failed'); return r.json(); }
+async function api(url, options={}) { const r=await fetch(url,{credentials:'same-origin',headers:{'Content-Type':'application/json',...(options.headers||{})},...options}); const data=await r.json().catch(()=>({})); if(!r.ok) throw new Error(data.error || `Request failed (${r.status})`); return data; }
 let content = { portfolios:[], testimonials:[], enquiries:[] };
 async function load(){ content=await api('/api/admin/content'); render(); }
 function render(){
@@ -19,8 +19,8 @@ function openTestimonial(x){$('#testimonialId').value=x?.id||'';$('#testimonialC
 function closeModals(){document.querySelectorAll('.modal').forEach(m=>m.classList.remove('open'));}
 $('#addPortfolio').onclick=()=>openPortfolio(); $('#addTestimonial').onclick=()=>openTestimonial(); document.querySelectorAll('.cancel,.backdrop').forEach(x=>x.onclick=closeModals);
 function fileData(file){return new Promise((resolve,reject)=>{if(!file)return resolve('');const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(file);});}
-$('#portfolioForm').onsubmit=async e=>{e.preventDefault();const body={name:$('#portfolioName').value,description:$('#portfolioDescription').value,url:$('#portfolioUrl').value,tags:$('#portfolioTags').value,quote:$('#portfolioQuote').value,image:await fileData($('#portfolioImage').files[0])};const id=$('#portfolioId').value;await api(id?'/api/admin/portfolio/'+id:'/api/admin/portfolio',{method:id?'PUT':'POST',body:JSON.stringify(body)});closeModals();toast('Saved');load();};
-$('#testimonialForm').onsubmit=async e=>{e.preventDefault();const body={client:$('#testimonialClient').value,role:$('#testimonialRole').value,image:await fileData($('#testimonialImage').files[0])};const id=$('#testimonialId').value;await api(id?'/api/admin/testimonial/'+id:'/api/admin/testimonial',{method:id?'PUT':'POST',body:JSON.stringify(body)});closeModals();toast('Saved');load();};
+$('#portfolioForm').onsubmit=async e=>{e.preventDefault();try{const body={name:$('#portfolioName').value,description:$('#portfolioDescription').value,url:$('#portfolioUrl').value,tags:$('#portfolioTags').value,quote:$('#portfolioQuote').value,image:await fileData($('#portfolioImage').files[0])};const id=$('#portfolioId').value;await api(id?'/api/admin/portfolio/'+id:'/api/admin/portfolio',{method:id?'PUT':'POST',body:JSON.stringify(body)});closeModals();toast('Portfolio saved');await load();}catch(err){toast(err.message);}};
+$('#testimonialForm').onsubmit=async e=>{e.preventDefault();try{const body={client:$('#testimonialClient').value,role:$('#testimonialRole').value,image:await fileData($('#testimonialImage').files[0])};const id=$('#testimonialId').value;await api(id?'/api/admin/testimonial/'+id:'/api/admin/testimonial',{method:id?'PUT':'POST',body:JSON.stringify(body)});closeModals();toast('Testimonial saved');await load();}catch(err){toast(err.message);}};
 document.querySelectorAll('.tab').forEach(tab=>tab.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));tab.classList.add('on');document.querySelectorAll('main section').forEach(s=>s.classList.toggle('hidden',s.id!==tab.dataset.tab));});
 $('#logout').onclick=async()=>{await fetch('/admin/logout',{method:'POST'});location.reload();};
 load().catch(()=>location.href='/admin');
