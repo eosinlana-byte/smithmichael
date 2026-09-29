@@ -1,0 +1,25 @@
+const $ = (s) => document.querySelector(s);
+const toast = (text) => { const t=$('#toast'); t.textContent=text; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1800); };
+const esc = (v) => String(v || '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function api(url, options={}) { const r=await fetch(url,{headers:{'Content-Type':'application/json',...(options.headers||{})},...options}); if(!r.ok) throw new Error('Request failed'); return r.json(); }
+let content = { portfolios:[], testimonials:[], enquiries:[] };
+async function load(){ content=await api('/api/admin/content'); render(); }
+function render(){
+  $('#portfolioRows').innerHTML=content.portfolios.length?content.portfolios.map(x=>`<tr><td>${esc(x.name)}</td><td>${esc(x.description)}<br><a href="${esc(x.url)}" target="_blank">Open site ↗</a></td><td>${esc(x.tags)}</td><td class="row-actions"><button class="btn ghost" data-pe="${x.id}">Edit</button><button class="btn danger" data-pd="${x.id}">Delete</button></td></tr>`).join(''):'<tr><td colspan="4" class="empty">No portfolio items.</td></tr>';
+  $('#testimonialRows').innerHTML=content.testimonials.length?content.testimonials.map(x=>`<tr><td>${esc(x.quote)}</td><td>${esc(x.client)}</td><td>${esc(x.role)}</td><td class="row-actions"><button class="btn ghost" data-te="${x.id}">Edit</button><button class="btn danger" data-td="${x.id}">Delete</button></td></tr>`).join(''):'<tr><td colspan="4" class="empty">No testimonials.</td></tr>';
+  $('#enquiryRows').innerHTML=content.enquiries.length?content.enquiries.map(x=>`<tr><td>${new Date(x.created_at).toLocaleString()}</td><td>${esc(x.name)}</td><td><a href="mailto:${esc(x.email)}?subject=Re%3A%20your%20Smith%20Michael%20enquiry">${esc(x.email)}</a><br><a href="mailto:${esc(x.email)}?subject=Re%3A%20your%20Smith%20Michael%20enquiry">Reply by email ↗</a></td><td>${esc(x.project_type)}</td><td>${esc(x.budget)}</td><td>${esc(x.message)}</td></tr>`).join(''):'<tr><td colspan="6" class="empty">No enquiries yet.</td></tr>';
+  document.querySelectorAll('[data-pe]').forEach(b=>b.onclick=()=>openPortfolio(content.portfolios.find(x=>String(x.id)===b.dataset.pe)));
+  document.querySelectorAll('[data-pd]').forEach(b=>b.onclick=()=>removeItem('/api/admin/portfolio/'+b.dataset.pd));
+  document.querySelectorAll('[data-te]').forEach(b=>b.onclick=()=>openTestimonial(content.testimonials.find(x=>String(x.id)===b.dataset.te)));
+  document.querySelectorAll('[data-td]').forEach(b=>b.onclick=()=>removeItem('/api/admin/testimonial/'+b.dataset.td));
+}
+async function removeItem(url){if(!confirm('Delete this item?'))return;await api(url,{method:'DELETE'});toast('Deleted');load();}
+function openPortfolio(x){$('#portfolioId').value=x?.id||'';$('#portfolioName').value=x?.name||'';$('#portfolioDescription').value=x?.description||'';$('#portfolioUrl').value=x?.url||'';$('#portfolioTags').value=x?.tags||'';$('#portfolioModalTitle').textContent=x?'Edit work':'Add work';$('#portfolioModal').classList.add('open');}
+function openTestimonial(x){$('#testimonialId').value=x?.id||'';$('#testimonialQuote').value=x?.quote||'';$('#testimonialClient').value=x?.client||'';$('#testimonialRole').value=x?.role||'';$('#testimonialModalTitle').textContent=x?'Edit testimonial':'Add testimonial';$('#testimonialModal').classList.add('open');}
+function closeModals(){document.querySelectorAll('.modal').forEach(m=>m.classList.remove('open'));}
+$('#addPortfolio').onclick=()=>openPortfolio(); $('#addTestimonial').onclick=()=>openTestimonial(); document.querySelectorAll('.cancel,.backdrop').forEach(x=>x.onclick=closeModals);
+$('#portfolioForm').onsubmit=async e=>{e.preventDefault();const body={name:$('#portfolioName').value,description:$('#portfolioDescription').value,url:$('#portfolioUrl').value,tags:$('#portfolioTags').value};const id=$('#portfolioId').value;await api(id?'/api/admin/portfolio/'+id:'/api/admin/portfolio',{method:id?'PUT':'POST',body:JSON.stringify(body)});closeModals();toast('Saved');load();};
+$('#testimonialForm').onsubmit=async e=>{e.preventDefault();const body={quote:$('#testimonialQuote').value,client:$('#testimonialClient').value,role:$('#testimonialRole').value};const id=$('#testimonialId').value;await api(id?'/api/admin/testimonial/'+id:'/api/admin/testimonial',{method:id?'PUT':'POST',body:JSON.stringify(body)});closeModals();toast('Saved');load();};
+document.querySelectorAll('.tab').forEach(tab=>tab.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));tab.classList.add('on');document.querySelectorAll('main section').forEach(s=>s.classList.toggle('hidden',s.id!==tab.dataset.tab));});
+$('#logout').onclick=async()=>{await fetch('/admin/logout',{method:'POST'});location.reload();};
+load().catch(()=>location.href='/admin');
