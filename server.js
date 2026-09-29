@@ -60,7 +60,7 @@ app.get('/admin', async (req, res) => {
   } catch (err) { console.error(err); res.status(500).send(adminShell('<p>Could not load enquiries.</p>')); }
 });
 app.post('/admin/login', (req, res) => {
-  if (req.body.username === 'merlin' && req.body.password === (process.env.ADMIN_PASSWORD || '')) {
+  if (String(req.body.username || '').trim() === 'merlin' && String(req.body.password || '').trim() === String(process.env.ADMIN_PASSWORD || '').trim()) {
     res.setHeader('Set-Cookie', `smith_admin=${encodeURIComponent(sessionToken())}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`);
     return res.redirect('/admin');
   }
