@@ -14,8 +14,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 async function initDb() {
   if (!pool) return;
   await pool.query(`CREATE TABLE IF NOT EXISTS enquiries (id SERIAL PRIMARY KEY,name TEXT NOT NULL,email TEXT NOT NULL,project_type TEXT NOT NULL,budget TEXT,message TEXT NOT NULL,created_at TIMESTAMPTZ DEFAULT NOW())`);
-  await pool.query(`CREATE TABLE IF NOT EXISTS portfolios (id SERIAL PRIMARY KEY,name TEXT NOT NULL,description TEXT NOT NULL,url TEXT,tags TEXT,image TEXT,created_at TIMESTAMPTZ DEFAULT NOW())`);
+  await pool.query(`CREATE TABLE IF NOT EXISTS portfolios (id SERIAL PRIMARY KEY,name TEXT NOT NULL,description TEXT NOT NULL,url TEXT,tags TEXT,image TEXT,quote TEXT,created_at TIMESTAMPTZ DEFAULT NOW())`);
   await pool.query('ALTER TABLE portfolios ADD COLUMN IF NOT EXISTS image TEXT');
+  await pool.query('ALTER TABLE portfolios ADD COLUMN IF NOT EXISTS quote TEXT');
   await pool.query(`CREATE TABLE IF NOT EXISTS testimonials (id SERIAL PRIMARY KEY,quote TEXT NOT NULL,client TEXT NOT NULL,role TEXT,created_at TIMESTAMPTZ DEFAULT NOW())`);
   const count = await pool.query('SELECT COUNT(*)::int AS count FROM portfolios');
   if (count.rows[0].count === 0) {
@@ -48,8 +49,8 @@ function adminCss(){return `*{box-sizing:border-box}body{margin:0;background:#12
 
 app.get('/admin',(req,res)=>{if(!loggedIn(req))return res.status(200).send(loginPage()); res.sendFile(path.join(__dirname,'public','admin.html'));});
 app.get('/api/admin/content',async(req,res)=>{if(!loggedIn(req))return res.status(401).json({error:'Login required'});if(!pool)return res.json({portfolios:[],testimonials:[],enquiries:[]});const [p,t,e]=await Promise.all([pool.query('SELECT * FROM portfolios ORDER BY id'),pool.query('SELECT * FROM testimonials ORDER BY id DESC'),pool.query('SELECT * FROM enquiries ORDER BY created_at DESC')]);res.json({portfolios:p.rows,testimonials:t.rows,enquiries:e.rows});});
-app.post('/api/admin/portfolio',async(req,res)=>{if(!loggedIn(req))return res.status(401).json({error:'Login required'});const {name,description,url,tags,image}=req.body;const r=await pool.query('INSERT INTO portfolios(name,description,url,tags,image) VALUES($1,$2,$3,$4,$5) RETURNING *',[name,description,url||'',tags||'',image||'']);res.json(r.rows[0]);});
-app.put('/api/admin/portfolio/:id',async(req,res)=>{if(!loggedIn(req))return res.status(401).json({error:'Login required'});const {name,description,url,tags,image}=req.body;const r=await pool.query('UPDATE portfolios SET name=$1,description=$2,url=$3,tags=$4,image=COALESCE(NULLIF($5,\'\'),image) WHERE id=$6 RETURNING *',[name,description,url||'',tags||'',image||'',req.params.id]);res.json(r.rows[0]);});
+app.post('/api/admin/portfolio',async(req,res)=>{if(!loggedIn(req))return res.status(401).json({error:'Login required'});const {name,description,url,tags,image,quote}=req.body;const r=await pool.query('INSERT INTO portfolios(name,description,url,tags,image,quote) VALUES($1,$2,$3,$4,$5,$6) RETURNING *',[name,description,url||'',tags||'',image||'',quote||'']);res.json(r.rows[0]);});
+app.put('/api/admin/portfolio/:id',async(req,res)=>{if(!loggedIn(req))return res.status(401).json({error:'Login required'});const {name,description,url,tags,image,quote}=req.body;const r=await pool.query('UPDATE portfolios SET name=$1,description=$2,url=$3,tags=$4,image=COALESCE(NULLIF($5,\'\'),image),quote=$6 WHERE id=$7 RETURNING *',[name,description,url||'',tags||'',image||'',quote||'',req.params.id]);res.json(r.rows[0]);});
 app.delete('/api/admin/portfolio/:id',async(req,res)=>{if(!loggedIn(req))return res.status(401).json({error:'Login required'});await pool.query('DELETE FROM portfolios WHERE id=$1',[req.params.id]);res.json({ok:true});});
 app.post('/api/admin/testimonial',async(req,res)=>{if(!loggedIn(req))return res.status(401).json({error:'Login required'});const {quote,client,role}=req.body;const r=await pool.query('INSERT INTO testimonials(quote,client,role) VALUES($1,$2,$3) RETURNING *',[quote,client,role||'']);res.json(r.rows[0]);});
 app.put('/api/admin/testimonial/:id',async(req,res)=>{if(!loggedIn(req))return res.status(401).json({error:'Login required'});const {quote,client,role}=req.body;const r=await pool.query('UPDATE testimonials SET quote=$1,client=$2,role=$3 WHERE id=$4 RETURNING *',[quote,client,role||'',req.params.id]);res.json(r.rows[0]);});
