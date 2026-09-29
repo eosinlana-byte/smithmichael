@@ -29,7 +29,7 @@ async function loadManagedContent() {
       }).join('');
     }
     if (testimonials && data.testimonials.length) {
-      testimonials.innerHTML = data.testimonials.map(item => `<blockquote><p>“${escapeHtml(item.quote)}”</p><cite>${escapeHtml(item.client)}${item.role ? `, ${escapeHtml(item.role)}` : ''}</cite></blockquote>`).join('');
+      testimonials.innerHTML = data.testimonials.map(item => `<figure class="testimonial-image-card">${item.image ? `<img src="${item.image}" alt="${escapeHtml(item.client)} testimonial">` : ''}<figcaption>${escapeHtml(item.client)}${item.role ? `, ${escapeHtml(item.role)}` : ''}</figcaption></figure>`).join('');
     }
   } catch (_) {}
 }
