@@ -7,7 +7,7 @@ const { Pool } = require('pg');
 const app = express();
 const port = process.env.PORT || 3000;
 const pool = process.env.DATABASE_URL ? new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } }) : null;
-app.use(express.json({ limit: '8mb' }));
+app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
