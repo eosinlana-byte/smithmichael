@@ -25,7 +25,7 @@ async function loadManagedContent() {
       work.innerHTML = data.portfolios.map((item, index) => {
         const colors = ['jackson-card','okolibooks-card','mirah-card'];
         const tags = String(item.tags || '').split(',').map(tag => tag.trim()).filter(Boolean).map(tag => `<span>${tag}</span>`).join('');
-        return `<article class="project"><a class="project-link" href="${escapeHtml(item.url || '#')}" target="_blank" rel="noreferrer"><div class="live-card ${colors[index % colors.length]}"><span>${escapeHtml(item.name)}</span><strong>Client website</strong><em>OPEN SITE ↗</em></div></a><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><div class="tags">${tags}</div></article>`;
+        return `<article class="project"><a class="project-link" href="${escapeHtml(item.url || '#')}" target="_blank" rel="noreferrer"><div class="live-card ${colors[index % colors.length]}">${item.image ? `<img class="portfolio-thumb" src="${item.image}" alt="">` : ''}<span>${escapeHtml(item.name)}</span><strong>Client website</strong><em>OPEN SITE ↗</em></div></a><h3>${escapeHtml(item.name)}</h3><p>${escapeHtml(item.description)}</p><div class="tags">${tags}</div></article>`;
       }).join('');
     }
     if (testimonials && data.testimonials.length) {
