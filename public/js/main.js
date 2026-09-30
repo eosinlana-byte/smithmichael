@@ -1,3 +1,8 @@
+const heroVideo = document.querySelector('.hero-video');
+const codePoster = document.querySelector('.code-poster');
+if (heroVideo) {
+  heroVideo.addEventListener('canplay', () => { if (codePoster) codePoster.style.display = 'none'; });
+}
 const form = document.querySelector('#contact-form');
 const status = document.querySelector('#form-status');
 if (form) {
